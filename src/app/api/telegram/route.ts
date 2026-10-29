@@ -1,5 +1,7 @@
 import type { Update } from "grammy/types";
 import { getBot } from "@/bot/bot";
+import { claimUpdate, releaseUpdate } from "@/core/updates";
+import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 
 export const maxDuration = 30;
@@ -17,7 +19,18 @@ export async function POST(request: Request) {
     return new Response("Bad request", { status: 400 });
   }
 
-  const bot = await getBot();
-  await bot.handleUpdate(update);
+  // Telegram retries on non-2xx and may deliver duplicates; handle each update once.
+  if (!(await claimUpdate(db(), update.update_id))) {
+    return new Response("OK");
+  }
+
+  try {
+    const bot = await getBot();
+    await bot.handleUpdate(update);
+  } catch (error) {
+    console.error("Failed to handle update", update.update_id, error);
+    await releaseUpdate(db(), update.update_id);
+    return new Response("Error", { status: 500 });
+  }
   return new Response("OK");
 }
