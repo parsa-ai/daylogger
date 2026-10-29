@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  INCOMPLETE
+  CANCELLED
+}
+
+model User {
+  id             String          @id @default(cuid())
+  telegramUserId BigInt          @unique
+  displayName    String
+  chatId         BigInt
+  isActive       Boolean         @default(true)
+  /// Multi-step input state (e.g. waiting for a task title). See PLAN.md D5.
+  pendingAction  Json?
+  createdAt      DateTime        @default(now())
+  recurringTasks RecurringTask[]
+  dailyTasks     DailyTask[]
+}
+
+model RecurringTask {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  /// "HH:mm" in the group timezone.
+  reminderTime String
+  isActive     Boolean     @default(true)
+  /// Soft delete so past daily instances keep their link.
+  deletedAt    DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  dailyTasks   DailyTask[]
+
+  @@index([userId])
+}
+
+model DailyTask {
+  id                String         @id @default(cuid())
+  userId            String
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Null for one-time tasks.
+  recurringTaskId   String?
+  recurringTask     RecurringTask? @relation(fields: [recurringTaskId], references: [id], onDelete: SetNull)
+  title             String
+  /// Calendar date in the group timezone.
+  date              DateTime       @db.Date
+  /// "HH:mm" in the group timezone; null means no reminder.
+  reminderTime      String?
+  status            TaskStatus     @default(PENDING)
+  reminderCount     Int            @default(0)
+  /// When the cron should next act on this task (UTC). Null = nothing scheduled.
+  nextReminderAt    DateTime?
+  /// Telegram message id of the latest reminder, so its buttons can be edited.
+  reminderMessageId Int?
+  completedAt       DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([recurringTaskId, date])
+  @@index([status, nextReminderAt])
+  @@index([date, userId])
+}
+
+/// Telegram update ids already handled (webhook dedup).
+model ProcessedUpdate {
+  updateId  BigInt   @id
+  createdAt DateTime @default(now())
+}
+
+/// One final report per group-local date.
+model DailyReport {
+  date      DateTime @id @db.Date
+  messageId Int?
+  createdAt DateTime @default(now())
+}
