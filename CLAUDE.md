@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Pre-implementation. The repo currently contains only the spec and the plan:
+Phase 1 (setup) done; see the numbered steps in the plan for what is next:
 
 - `docs/PRODEUCT.md` — product requirements (source of truth; filename typo is intentional/kept).
 - `docs/PLAN.md` — design decisions (D1–D13), Prisma schema, reminder state machine, and the numbered step list. Work through steps in order and update this file as real commands/structure appear.
@@ -15,18 +15,25 @@ Do not expand scope beyond `PRODEUCT.md` §21 (MVP) — §22 lists explicitly ex
 
 Next.js (App Router) + TypeScript, grammY, Prisma on Neon Postgres (`@prisma/adapter-neon`), Vercel + Vercel Cron, pnpm, vitest.
 
-## Commands (planned — verify in `package.json` once Phase 1 lands)
+## Commands
 
 ```bash
-pnpm install
+pnpm install                   # also runs `prisma generate` (postinstall)
 pnpm dev                       # next dev
 pnpm typecheck && pnpm lint && pnpm test   # run before every commit
-pnpm vitest run path/to/file.test.ts       # single test file
+pnpm vitest run src/lib/env.test.ts        # single test file
 pnpm vitest run -t "test name"             # single test by name
-pnpm prisma migrate dev        # local migration (uses DIRECT_URL)
-pnpm prisma migrate deploy     # prod migration (in Vercel build)
-pnpm bot:set-webhook           # register Telegram webhook + command list
+pnpm db:migrate                # prisma migrate dev (uses DIRECT_URL)
+pnpm db:deploy                 # prisma migrate deploy
 ```
+
+If `tsc` reports errors that contradict `tsconfig.json`, delete `tsconfig.tsbuildinfo` (stale incremental cache).
+
+## Version notes
+
+- **Next.js 16** — APIs differ from older versions; see `AGENTS.md` and read `node_modules/next/dist/docs/` before writing route/framework code.
+- **Prisma 7** — generator is `prisma-client` with output `src/generated/prisma` (gitignored; import from `@/generated/prisma/client`). The datasource URL lives in `prisma.config.ts` (DIRECT_URL, CLI only); runtime uses the Neon driver adapter in `src/lib/db.ts`. Keep the `prisma` CLI and `@prisma/client` on the same 7.x version (`pnpm add -D prisma` alone may pull an 8.x RC).
+- `env()` and `db()` are lazy functions, so `next build` works without secrets. Never read `process.env` directly elsewhere.
 
 ## Architecture (big picture)
 
