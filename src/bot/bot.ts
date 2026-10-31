@@ -1,11 +1,13 @@
 import { Bot } from "grammy";
 import { env } from "@/lib/env";
 import { recurringTaskCallback } from "./callbacks";
+import { addCommand } from "./commands/add";
 import { helpCommand } from "./commands/help";
 import { startCommand } from "./commands/start";
 import { tasksCommand } from "./commands/tasks";
 import { pendingInputHandler } from "./input";
 import { messages } from "./messages";
+import { oneTimeCallback } from "./oneTime";
 import { reminderCallback } from "./reminderCallbacks";
 
 let bot: Bot | undefined;
@@ -29,8 +31,10 @@ function createBot(): Bot {
   group.command("start", startCommand);
   group.command("help", helpCommand);
   group.command("tasks", tasksCommand);
+  group.command("add", addCommand);
   group.callbackQuery(/^rt:/, recurringTaskCallback);
   group.callbackQuery(/^dt:/, reminderCallback);
+  group.callbackQuery(/^ot:/, oneTimeCallback);
   // Replies to the bot's input prompts (task titles, times). Keep last.
   group.on("message:text", pendingInputHandler);
 

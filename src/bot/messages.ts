@@ -1,3 +1,4 @@
+import { MAX_ONE_TIME_PER_DAY } from "@/core/oneTime";
 import { MAX_RECURRING_TASKS } from "@/core/recurring";
 import type { RecurringTask } from "@/generated/prisma/client";
 import { escapeHtml } from "./format";
@@ -94,6 +95,18 @@ export const messages = {
   toastNotYet: "Okay, I'll check again later.",
   toastAlreadyCompleted: "Already completed ✅",
   toastTaskClosed: "This task is closed.",
+
+  // /add (one-time tasks)
+  askOneTimeTitle: (who: string) =>
+    `${who}, what's the task? Reply to this message with its title.\n<i>Send "cancel" to stop.</i>`,
+  oneTimeAdded: (title: string) => `📝 Added <b>${escapeHtml(title)}</b> for today.\nWhen should I remind you?`,
+  oneTimeScheduled: (title: string, time: string) =>
+    `📝 <b>${escapeHtml(title)}</b> — I'll ask you at ${time}.\nDone sooner? Tap below.`,
+  oneTimeNoReminder: (title: string) => `📝 <b>${escapeHtml(title)}</b> — no reminder.\nTap below when it's done.`,
+  oneTimeAfterReport: "Today's report is already out — add it tomorrow.",
+  oneTimeLimit: `You can add at most ${MAX_ONE_TIME_PER_DAY} one-time tasks per day.`,
+  timeInPast: "That time has already passed.",
+  toastReminderAlreadySet: "The reminder is already set.",
 
   toastActivated: "Activated — from tomorrow.",
   toastPaused: "Paused — from tomorrow.",

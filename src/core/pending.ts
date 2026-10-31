@@ -12,6 +12,7 @@ const schema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("addRecurringTime"), title: z.string(), ...base }),
   z.object({ kind: z.literal("editTitle"), taskId: z.string(), ...base }),
   z.object({ kind: z.literal("editTime"), taskId: z.string(), ...base }),
+  z.object({ kind: z.literal("addOneTimeTitle"), ...base }),
 ]);
 
 export type PendingAction = z.infer<typeof schema>;

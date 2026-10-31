@@ -43,6 +43,15 @@ export function completeOnlyKeyboard(dailyTaskId: string): InlineKeyboard {
   return new InlineKeyboard().text("✅ Completed", cb.daily("done", dailyTaskId));
 }
 
+export function oneTimeChoiceKeyboard(dailyTaskId: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("In 30 min", cb.oneTime("in30", dailyTaskId))
+    .text("In 1 hour", cb.oneTime("in60", dailyTaskId))
+    .row()
+    .text("At a specific time", cb.oneTime("at", dailyTaskId))
+    .text("No reminder", cb.oneTime("none", dailyTaskId));
+}
+
 export function backToListKeyboard(ownerId: number): InlineKeyboard {
   return new InlineKeyboard().text("📋 My tasks", cb.list("list", ownerId));
 }

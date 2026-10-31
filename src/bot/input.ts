@@ -1,12 +1,5 @@
 import type { Context, NextFunction } from "grammy";
-import type { Message } from "grammy/types";
-import {
-  clearPendingAction,
-  parsePendingAction,
-  setPendingAction,
-  type PendingAction,
-  type PendingInput,
-} from "@/core/pending";
+import { clearPendingAction, parsePendingAction } from "@/core/pending";
 import {
   createRecurringTask,
   findRecurringTask,
@@ -16,12 +9,12 @@ import {
 import { findUser } from "@/core/users";
 import { isTimeAfter } from "@/core/time";
 import { parseTime, parseTitle } from "@/core/validation";
-import type { User } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
-import { mention } from "./format";
 import { backToListKeyboard } from "./keyboards";
 import { messages } from "./messages";
+import { addOneTimeTask } from "./oneTime";
+import { promptForInput } from "./prompt";
 
 /** A reminder time for a recurring task, or the error to show. */
 function parseTaskTime(text: string): { ok: true; time: string } | { ok: false; error: string } {
@@ -30,26 +23,6 @@ function parseTaskTime(text: string): { ok: true; time: string } | { ok: false; 
   const cutoff = env().REMINDER_CUTOFF;
   if (isTimeAfter(time, cutoff)) return { ok: false, error: messages.timeAfterCutoff(cutoff) };
   return { ok: true, time };
-}
-
-/**
- * Ask the user for text and remember what the answer is for. The prompt uses a
- * selective force-reply so only that user's client opens a reply, and replies to
- * the bot reach it even with privacy mode on.
- */
-export async function promptForInput(
-  ctx: Context,
-  user: User,
-  action: PendingInput,
-  text: (who: string) => string,
-  replyTo?: Message,
-): Promise<void> {
-  const sent = await ctx.reply(text(mention(user.telegramUserId, user.displayName)), {
-    parse_mode: "HTML",
-    reply_markup: { force_reply: true, selective: true },
-    ...(replyTo && { reply_parameters: { message_id: replyTo.message_id } }),
-  });
-  await setPendingAction(db(), user.id, { ...action, promptMessageId: sent.message_id } as PendingAction);
 }
 
 /** Handles a text reply to the user's latest prompt; anything else passes through. */
@@ -74,6 +47,15 @@ export async function pendingInputHandler(ctx: Context, next: NextFunction) {
   }
 
   switch (action.kind) {
+    case "addOneTimeTitle": {
+      const title = parseTitle(text);
+      if (!title.ok) {
+        return promptForInput(ctx, user, action, (who) => `${title.error}\n${messages.askOneTimeTitle(who)}`, message);
+      }
+      await clearPendingAction(db(), user.id);
+      return addOneTimeTask(ctx, user, title.title, message);
+    }
+
     case "addRecurringTitle": {
       const title = parseTitle(text);
       if (!title.ok) {

@@ -13,7 +13,7 @@ import type { User } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { parseCallbackData } from "./callbackData";
 import { editCallbackMessage } from "./edit";
-import { promptForInput } from "./input";
+import { promptForInput } from "./prompt";
 import { confirmDeleteKeyboard, taskDetailKeyboard, taskListKeyboard } from "./keyboards";
 import { messages } from "./messages";
 
