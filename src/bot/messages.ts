@@ -1,3 +1,4 @@
+import { MAX_RECURRING_TASKS } from "@/core/recurring";
 import type { RecurringTask } from "@/generated/prisma/client";
 import { escapeHtml } from "./format";
 
@@ -48,5 +49,17 @@ export const messages = {
 
   notOwner: (name: string) => `Only ${name} can manage these tasks.`,
   taskGone: "This task no longer exists.",
+  taskLimit: `You can have at most ${MAX_RECURRING_TASKS} recurring tasks.`,
+
+  // Text input prompts (reply-to-message flows)
+  askTitle: (who: string) => `${who}, reply to this message with the task title.\n<i>Send "cancel" to stop.</i>`,
+  askTime: (who: string, title: string) =>
+    `${who}, what time should I ask about <b>${escapeHtml(title)}</b>?\n` +
+    `Reply with a time like <code>10:00</code> or <code>21:15</code>.\n<i>Send "cancel" to stop.</i>`,
+  invalidTime: "That isn't a valid time. Use HH:mm, e.g. 10:00.",
+  inputCancelled: "Cancelled.",
+
+  taskAdded: (title: string, time: string) =>
+    `Added <b>${escapeHtml(title)}</b> at ${time}.\nIt starts tomorrow.`,
 };
 

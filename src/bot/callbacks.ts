@@ -1,9 +1,16 @@
 import { GrammyError, type Context, type InlineKeyboard } from "grammy";
-import { findRecurringTask, isOwner, listRecurringTasks, type TaskWithOwner } from "@/core/recurring";
+import {
+  MAX_RECURRING_TASKS,
+  findRecurringTask,
+  isOwner,
+  listRecurringTasks,
+  type TaskWithOwner,
+} from "@/core/recurring";
 import { findUser } from "@/core/users";
 import type { User } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { parseCallbackData } from "./callbackData";
+import { promptForInput } from "./input";
 import { taskDetailKeyboard, taskListKeyboard } from "./keyboards";
 import { messages } from "./messages";
 
@@ -47,6 +54,11 @@ async function route(ctx: Context): Promise<string | void> {
     switch (data.action) {
       case "list":
         return showList(ctx, owner);
+      case "add": {
+        const tasks = await listRecurringTasks(db(), owner.id);
+        if (tasks.length >= MAX_RECURRING_TASKS) return messages.taskLimit;
+        return promptForInput(ctx, owner, { kind: "addRecurringTitle" }, messages.askTitle);
+      }
     }
     return;
   }

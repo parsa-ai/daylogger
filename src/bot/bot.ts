@@ -4,6 +4,7 @@ import { recurringTaskCallback } from "./callbacks";
 import { helpCommand } from "./commands/help";
 import { startCommand } from "./commands/start";
 import { tasksCommand } from "./commands/tasks";
+import { pendingInputHandler } from "./input";
 import { messages } from "./messages";
 
 let bot: Bot | undefined;
@@ -28,6 +29,8 @@ function createBot(): Bot {
   group.command("help", helpCommand);
   group.command("tasks", tasksCommand);
   group.callbackQuery(/^rt:/, recurringTaskCallback);
+  // Replies to the bot's input prompts (task titles, times). Keep last.
+  group.on("message:text", pendingInputHandler);
 
   return b;
 }

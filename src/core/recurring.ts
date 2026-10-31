@@ -25,3 +25,17 @@ export function findRecurringTask(db: Db, taskId: string): Promise<TaskWithOwner
 export function isOwner(task: { user: Pick<User, "telegramUserId"> }, telegramUserId: number): boolean {
   return task.user.telegramUserId === BigInt(telegramUserId);
 }
+
+export type CreateResult = { ok: true; task: RecurringTask } | { ok: false; reason: "limit" };
+
+export async function createRecurringTask(
+  db: Db,
+  userId: string,
+  title: string,
+  reminderTime: string,
+): Promise<CreateResult> {
+  const count = await db.recurringTask.count({ where: { userId, deletedAt: null } });
+  if (count >= MAX_RECURRING_TASKS) return { ok: false, reason: "limit" };
+  const task = await db.recurringTask.create({ data: { userId, title, reminderTime } });
+  return { ok: true, task };
+}
