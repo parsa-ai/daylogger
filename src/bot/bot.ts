@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import { recurringTaskCallback } from "./callbacks";
 import { addCommand } from "./commands/add";
 import { helpCommand } from "./commands/help";
+import { reportCommand } from "./commands/report";
 import { startCommand } from "./commands/start";
 import { tasksCommand } from "./commands/tasks";
 import { pendingInputHandler } from "./input";
@@ -32,6 +33,7 @@ function createBot(): Bot {
   group.command("help", helpCommand);
   group.command("tasks", tasksCommand);
   group.command("add", addCommand);
+  group.command("report", reportCommand);
   group.callbackQuery(/^rt:/, recurringTaskCallback);
   group.callbackQuery(/^dt:/, reminderCallback);
   group.callbackQuery(/^ot:/, oneTimeCallback);
