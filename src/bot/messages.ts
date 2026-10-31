@@ -72,6 +72,14 @@ export const messages = {
   timeUpdated: (title: string, time: string) =>
     `<b>${escapeHtml(title)}</b> is now at ${time}.\n${appliesTomorrow}`,
 
+  // Reminders (attempt 1 = initial, 2–3 = follow-ups)
+  reminder: (who: string, title: string, attempt: number) => {
+    const task = `<b>${escapeHtml(title)}</b>`;
+    if (attempt <= 1) return `${who}, have you completed ${task} today?`;
+    const label = attempt >= 3 ? "Last reminder" : "Reminder";
+    return `🔔 ${label}: ${who}, have you done ${task} yet?`;
+  },
+
   toastActivated: "Activated — from tomorrow.",
   toastPaused: "Paused — from tomorrow.",
   toastDeleted: "Deleted.",

@@ -32,6 +32,17 @@ export function confirmDeleteKeyboard(task: RecurringTask): InlineKeyboard {
     .text("Cancel", cb.task("open", task.id));
 }
 
+export function reminderKeyboard(dailyTaskId: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("✅ Completed", cb.daily("done", dailyTaskId))
+    .text("⏳ Not yet", cb.daily("later", dailyTaskId));
+}
+
+/** After "Not yet" or finalization: completing is still possible today. */
+export function completeOnlyKeyboard(dailyTaskId: string): InlineKeyboard {
+  return new InlineKeyboard().text("✅ Completed", cb.daily("done", dailyTaskId));
+}
+
 export function backToListKeyboard(ownerId: number): InlineKeyboard {
   return new InlineKeyboard().text("📋 My tasks", cb.list("list", ownerId));
 }

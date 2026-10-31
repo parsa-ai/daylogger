@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isTimeAfter, localDate, localTime, startOfLocalDay, toDbDate, toUtc } from "./time";
+import { fromDbDate, isTimeAfter, localDate, localTime, startOfLocalDay, toDbDate, toUtc } from "./time";
 
 const LONDON = "Europe/London";
 
@@ -51,6 +51,7 @@ describe("helpers", () => {
 
   it("toDbDate is UTC midnight of the local date", () => {
     expect(toDbDate("2026-07-01").toISOString()).toBe("2026-07-01T00:00:00.000Z");
+    expect(fromDbDate(toDbDate("2026-07-01"))).toBe("2026-07-01");
   });
 
   it("compares HH:mm", () => {

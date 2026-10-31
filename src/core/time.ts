@@ -40,6 +40,11 @@ export function toDbDate(date: string): Date {
   return new Date(`${date}T00:00:00Z`);
 }
 
+/** The local date stored in a Prisma `@db.Date` column. */
+export function fromDbDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 /** Compare two "HH:mm" strings (zero-padded, so lexical order is time order). */
 export function isTimeAfter(a: string, b: string): boolean {
   return a > b;

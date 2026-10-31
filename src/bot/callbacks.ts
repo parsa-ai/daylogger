@@ -65,6 +65,8 @@ async function route(ctx: Context): Promise<string | void> {
     return;
   }
 
+  if (data.scope !== "task") return;
+
   const task = await findRecurringTask(db(), data.taskId);
   if (!task) return messages.taskGone;
   if (!isOwner(task, from.id)) return messages.notOwner(task.user.displayName);

@@ -1,3 +1,4 @@
+import { telegramReminderSender } from "@/bot/sender";
 import { runTick } from "@/core/tick";
 import { safeEqual } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -16,6 +17,6 @@ export async function GET(request: Request) {
     return new Response("GROUP_CHAT_ID is not configured", { status: 503 });
   }
 
-  const result = await runTick(db(), new Date(), scheduleConfig());
+  const result = await runTick(db(), telegramReminderSender(), new Date(), scheduleConfig());
   return Response.json(result);
 }
