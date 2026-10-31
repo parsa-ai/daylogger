@@ -14,11 +14,16 @@ function fakeDb(count: number, statusAfter: string) {
 }
 
 describe("completeTask", () => {
-  it("completes a pending task for today, guarded by owner and date", async () => {
+  it("completes a pending or incomplete task for today, guarded by owner and date", async () => {
     const db = fakeDb(1, "COMPLETED");
     expect(await completeTask(db as never, task, now, "2026-07-01")).toBe("completed");
     expect(db.dailyTask.updateMany).toHaveBeenCalledWith({
-      where: { id: "t1", userId: "u1", status: "PENDING", date: new Date("2026-07-01T00:00:00Z") },
+      where: {
+        id: "t1",
+        userId: "u1",
+        status: { in: ["PENDING", "INCOMPLETE"] },
+        date: new Date("2026-07-01T00:00:00Z"),
+      },
       data: { status: "COMPLETED", completedAt: now, nextReminderAt: null },
     });
   });

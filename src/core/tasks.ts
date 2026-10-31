@@ -13,7 +13,8 @@ export type CompleteResult = "completed" | "already" | "closed";
 
 /**
  * Mark a task completed by its owner (guarded update, so repeat clicks are
- * no-ops). Only today's PENDING tasks can be completed.
+ * no-ops). Today's PENDING tasks can be completed, and so can INCOMPLETE
+ * ones: the owner may still finish later the same day.
  */
 export async function completeTask(
   db: Db,
@@ -22,7 +23,12 @@ export async function completeTask(
   today: string,
 ): Promise<CompleteResult> {
   const { count } = await db.dailyTask.updateMany({
-    where: { id: task.id, userId: task.userId, status: "PENDING", date: toDbDate(today) },
+    where: {
+      id: task.id,
+      userId: task.userId,
+      status: { in: ["PENDING", "INCOMPLETE"] },
+      date: toDbDate(today),
+    },
     data: { status: "COMPLETED", completedAt: now, nextReminderAt: null },
   });
   if (count === 1) return "completed";
