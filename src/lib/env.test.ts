@@ -40,3 +40,13 @@ describe("env", () => {
     expect(() => env()).toThrow(/HH:mm/);
   });
 });
+
+describe("env during setup", () => {
+  it("boots without GROUP_CHAT_ID and DIRECT_URL", async () => {
+    const { GROUP_CHAT_ID, DIRECT_URL, ...rest } = valid;
+    void GROUP_CHAT_ID;
+    void DIRECT_URL;
+    const env = await loadEnv(rest);
+    expect(env().GROUP_CHAT_ID).toBeUndefined();
+  });
+});

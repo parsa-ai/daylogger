@@ -7,8 +7,9 @@ const schema = z.object({
   TELEGRAM_WEBHOOK_SECRET: z.string().min(1),
   CRON_SECRET: z.string().min(1),
   DATABASE_URL: z.url(),
-  DIRECT_URL: z.url(),
-  GROUP_CHAT_ID: z.coerce.bigint(),
+  // DIRECT_URL is only used by the Prisma CLI (prisma.config.ts), not at runtime.
+  // Optional so the bot can boot and reveal the group's chat id during setup.
+  GROUP_CHAT_ID: z.string().regex(/^-?\d+$/, "expected a numeric chat id").transform(BigInt).optional(),
   GROUP_TIMEZONE: z.string().default("Europe/London").refine(isValidTimeZone, "invalid IANA timezone"),
   REMINDER_CUTOFF: timeOfDay.default("21:30"),
   REPORT_TIME: timeOfDay.default("22:00"),
