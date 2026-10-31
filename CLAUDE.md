@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Phase 1 (setup) done; see the numbered steps in the plan for what is next:
+Phases 1–3 (setup, Telegram integration, recurring tasks) done; next is Phase 4 (reminders, step 16). See the numbered steps in the plan:
 
 - `docs/PRODEUCT.md` — product requirements (source of truth; filename typo is intentional/kept).
 - `docs/PLAN.md` — design decisions (D1–D13), Prisma schema, reminder state machine, and the numbered step list. Work through steps in order and update this file as real commands/structure appear.
@@ -51,7 +51,8 @@ Key invariants (see `docs/PLAN.md` for detail):
 - **Reminder state machine:** `reminderCount` 0→1 at T, 2 at T+1h, 3 at T+2h, then finalize to `INCOMPLETE` at +1h; driven by `DailyTask.nextReminderAt` (UTC). Nothing is sent after the cutoff (`21:30`, configurable) or after the report. Owner may still mark `COMPLETED` later the same day.
 - **Owner check:** every callback validates the Telegram user ID matches the task owner before any write.
 - **Time:** all scheduling uses `GROUP_TIMEZONE` (IANA, default `Europe/London`), never server TZ. `DailyTask.date` is the group-local calendar date (`@db.Date`); times are `"HH:mm"` strings converted to UTC via DST-safe helpers in `src/core/time.ts`.
-- **Multi-step input** (adding/editing titles, "specific time" for `/add`) is stored in `User.pendingAction` (JSON), not in grammY sessions/memory. Status changes are inline-button only.
+- **Multi-step input** (adding/editing titles, "specific time" for `/add`) is stored in `User.pendingAction` (JSON, zod-validated in `src/core/pending.ts`), not in grammY sessions/memory. The bot sends a selective force-reply prompt and only accepts a text that *replies to that prompt's message id* (works with privacy mode on; ignores normal chatter). Status changes are inline-button only.
+- **Callback data** is `rt:<action>:<target>` (`src/bot/callbackData.ts`, 64-byte limit); `src/bot/callbacks.ts` routes it and answers each callback exactly once.
 
 Env vars: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET`, `DATABASE_URL`, `DIRECT_URL`, `GROUP_CHAT_ID`, `GROUP_TIMEZONE` (validated with zod in `src/lib/env.ts`; template in `.env.example`).
 
