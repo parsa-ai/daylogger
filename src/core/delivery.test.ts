@@ -72,6 +72,29 @@ describe("processDueReminders", () => {
     });
   });
 
+  it("handles one-time tasks (no definition) the same way", async () => {
+    // "/add … in 30 min" at 10:10 BST → reminder at 10:40.
+    const oneTime = makeTask({
+      recurringTaskId: null,
+      recurringTask: null,
+      reminderTime: "10:40",
+      nextReminderAt: at("2026-07-01T09:40:00Z"),
+    });
+    const db = fakeDb(oneTime);
+    const sender = fakeSender(200);
+    const result = await processDueReminders(db as never, sender, at("2026-07-01T09:40:00Z"), config);
+
+    expect(result.sent).toBe(1);
+    expect(db.row).toMatchObject({ reminderCount: 1, nextReminderAt: at("2026-07-01T10:40:00Z") });
+  });
+
+  it("never sends for a one-time task without a reminder", async () => {
+    const db = fakeDb(makeTask({ recurringTaskId: null, recurringTask: null, reminderTime: null }));
+    const sender = fakeSender();
+    await processDueReminders(db as never, sender, at("2026-07-01T09:40:00Z"), config);
+    expect(sender.sendReminder).not.toHaveBeenCalled();
+  });
+
   it("clears buttons on the previous reminder", async () => {
     const db = fakeDb(makeTask({ reminderCount: 1, reminderMessageId: 99, nextReminderAt: at("2026-07-01T10:00:00Z") }));
     const sender = fakeSender(101);
