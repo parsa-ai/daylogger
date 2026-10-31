@@ -147,8 +147,9 @@ reminderCount  meaning                          nextReminderAt
 - Sending a new reminder clears the buttons on the previous one.
 - **Finalize** (count = 3, due) → `INCOMPLETE`; the last reminder is edited to
   "didn't complete" with a **Completed** button (valid for the rest of the day).
-- **Cron tick order** (`src/core/tick.ts`): finalize past days → generate today →
-  finalize due → at ≥ report time finalize the whole day → send reminders.
+- **Cron tick order** (`src/core/tick.ts`): finalize past days → publish yesterday's report if
+  missed → generate today → finalize due → at ≥ report time finalize the whole
+  day and publish the report once → send reminders.
   Closing the day before sending guarantees nothing goes out after the report.
 - Non-owner click → `answerCallbackQuery("Only <name> can answer this")`, no DB write.
 - **Sending a reminder (idempotent):** claim the row first with a conditional

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Phases 1–5 (setup, Telegram, recurring tasks, reminders, one-time tasks) done; next is Phase 6 (daily report, step 25). See the numbered steps in the plan:
+Phases 1–6 (setup, Telegram, recurring tasks, reminders, one-time tasks, daily report) done — MVP feature-complete; next is Phase 7 (deployment, step 28). See the numbered steps in the plan:
 
 - `docs/PRODEUCT.md` — product requirements (source of truth; filename typo is intentional/kept).
 - `docs/PLAN.md` — design decisions (D1–D13), Prisma schema, reminder state machine, and the numbered step list. Work through steps in order and update this file as real commands/structure appear.
@@ -42,7 +42,7 @@ Serverless only — **no `setTimeout`/`setInterval`, in-memory queues, or proces
 
 Two entry points:
 - `src/app/api/telegram/route.ts` — webhook. Checks `X-Telegram-Bot-Api-Secret-Token`, dedups by `update_id` via `ProcessedUpdate` insert-or-skip, ignores chats other than `GROUP_CHAT_ID`, then hands off to the grammY bot (`src/bot/`).
-- `src/app/api/cron/route.ts` — called by a free external pinger (cron-job.org, every ~10 min; **no Vercel cron** — Hobby only allows daily, see `docs/SCHEDULER.md`), guarded by `Authorization: Bearer $CRON_SECRET`. `runTick` (`src/core/tick.ts`): finalize past days → generate today → finalize due → at ≥ `REPORT_TIME` close the day → send due reminders (`src/core/delivery.ts`, Telegram side injected via `ReminderSender` in `src/bot/sender.ts`). Report publishing is added in Phase 6.
+- `src/app/api/cron/route.ts` — called by a free external pinger (cron-job.org, every ~10 min; **no Vercel cron** — Hobby only allows daily, see `docs/SCHEDULER.md`), guarded by `Authorization: Bearer $CRON_SECRET`. `runTick` (`src/core/tick.ts`): finalize past days → publish yesterday's report if it was missed → generate today → finalize due → at ≥ `REPORT_TIME` close the day and publish the report once (`publishReportOnce` in `src/core/report.ts`) → send due reminders (`src/core/delivery.ts`, Telegram side injected via `ReminderSender` in `src/bot/sender.ts`). Report publishing is added in Phase 6.
 
 Business logic lives in `src/core/` and takes `now` + a db client (and an injected sender where it talks to Telegram) so it is testable without Telegram; `src/bot/` is a thin Telegram layer. Reminder buttons use `dt:<done|later>:<dailyTaskId>` (`src/bot/reminderCallbacks.ts`); one-time reminder choices use `ot:<in30|in60|at|none>:<dailyTaskId>` (`src/bot/oneTime.ts`, core in `src/core/oneTime.ts`). `/add` creates the `DailyTask` immediately (so it's in the report even if no reminder is chosen); the choice is a guarded one-shot update.
 
