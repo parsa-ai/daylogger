@@ -9,7 +9,7 @@ import {
 import { findDailyTask } from "@/core/tasks";
 import { findUser } from "@/core/users";
 import { isTimeAfter } from "@/core/time";
-import { parseTime, parseTitle } from "@/core/validation";
+import { isCancel, parseTime, parseTitle } from "@/core/validation";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { backToListKeyboard } from "./keyboards";
@@ -41,7 +41,7 @@ export async function pendingInputHandler(ctx: Context, next: NextFunction) {
   const reply = (html: string, extra: Parameters<Context["reply"]>[1] = {}) =>
     ctx.reply(html, { parse_mode: "HTML", reply_parameters: { message_id: message.message_id }, ...extra });
 
-  if (text.trim().toLowerCase() === "cancel") {
+  if (isCancel(text)) {
     await clearPendingAction(db(), user.id);
     await reply(messages.inputCancelled);
     return;
@@ -51,7 +51,7 @@ export async function pendingInputHandler(ctx: Context, next: NextFunction) {
     case "addOneTimeTitle": {
       const title = parseTitle(text);
       if (!title.ok) {
-        return promptForInput(ctx, user, action, (who) => `${title.error}\n${messages.askOneTimeTitle(who)}`, message);
+        return promptForInput(ctx, user, action, (who) => `${messages.titleError(title.reason)}\n${messages.askOneTimeTitle(who)}`, message);
       }
       await clearPendingAction(db(), user.id);
       return addOneTimeTask(ctx, user, title.title, message);
@@ -84,7 +84,7 @@ export async function pendingInputHandler(ctx: Context, next: NextFunction) {
     case "addRecurringTitle": {
       const title = parseTitle(text);
       if (!title.ok) {
-        return promptForInput(ctx, user, action, (who) => `${title.error}\n${messages.askTitle(who)}`, message);
+        return promptForInput(ctx, user, action, (who) => `${messages.titleError(title.reason)}\n${messages.askTitle(who)}`, message);
       }
       return promptForInput(
         ctx,
@@ -135,7 +135,7 @@ export async function pendingInputHandler(ctx: Context, next: NextFunction) {
             ctx,
             user,
             action,
-            (who) => `${title.error}\n${messages.askNewTitle(who, task.title)}`,
+            (who) => `${messages.titleError(title.reason)}\n${messages.askNewTitle(who, task.title)}`,
             message,
           );
         }

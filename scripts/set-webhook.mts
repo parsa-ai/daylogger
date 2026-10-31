@@ -31,10 +31,10 @@ await call("setWebhook", {
 
 await call("setMyCommands", {
   commands: [
-    { command: "start", description: "Join the bot" },
-    { command: "tasks", description: "Manage your recurring tasks" },
-    { command: "add", description: "Add a one-time task for today" },
-    { command: "report", description: "Show today's group progress" },
-    { command: "help", description: "How the bot works" },
+    { command: "start", description: "عضو شدن 🌱" },
+    { command: "tasks", description: "کارهای روزانه‌ی من 🗂" },
+    { command: "add", description: "یه کار یه‌باره برای امروز 📝" },
+    { command: "report", description: "وضعیت امروز گروه 📊" },
+    { command: "help", description: "راهنما 🌼" },
   ],
 });

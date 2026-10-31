@@ -18,7 +18,7 @@ const data: ReportData = {
     {
       name: "Parsa <3",
       tasks: [
-        { title: "Study English", status: "COMPLETED" },
+        { title: "مطالعه‌ی زبان", status: "COMPLETED" },
         { title: "Work on project", status: "COMPLETED" },
         { title: "Exercise", status: "INCOMPLETE" },
         { title: "Buy a charger", status: "COMPLETED" },
@@ -33,35 +33,43 @@ const data: ReportData = {
 };
 
 describe("formatReport", () => {
-  it("renders the final report like the spec", () => {
+  it("renders the final report in Persian", () => {
     const [text, ...rest] = formatReport(data, "final");
     expect(rest).toEqual([]);
     expect(text).toBe(
       [
-        "📊 <b>Daily Group Report</b> — Wed 1 Jul",
-        "<b>Ali</b>\n• Study university subjects: ✅ Completed\n• Exercise: ✅ Completed\n• Work on project: ❌ Incomplete\nProgress: 2/3 — 67%",
-        "<b>Parsa &lt;3</b>\n• Study English: ✅ Completed\n• Work on project: ✅ Completed\n• Exercise: ❌ Incomplete\n• Buy a charger: ✅ Completed\nProgress: 3/4 — 75%",
-        "<b>Sara</b>\nNo tasks today.",
-        "<b>Group progress</b>\n5 completed tasks out of 7 total tasks.\n71% completion.",
+        "📊 <b>گزارش روزانه‌ی گروه</b>\n🗓 چهارشنبه ۱۰ تیر",
+        "👤 <b>Ali</b>\n• Study university subjects — ✅ انجام شد\n• Exercise — ✅ انجام شد\n• Work on project — ❌ انجام نشد\n" +
+          "🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜\n📈 پیشرفت: ۲ از ۳ — ۶۷٪",
+        "👤 <b>Parsa &lt;3</b>\n• مطالعه‌ی زبان — ✅ انجام شد\n• Work on project — ✅ انجام شد\n• Exercise — ❌ انجام نشد\n• Buy a charger — ✅ انجام شد\n" +
+          "🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜\n📈 پیشرفت: ۳ از ۴ — ۷۵٪",
+        "👤 <b>Sara</b>\n🍃 امروز کاری نداشت.",
+        "🌟 <b>پیشرفت گروه</b>\n۵ کار از ۷ کار انجام شد.\n🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜  ۷۱٪\n\n💪 خوب بود؛ فردا بهتر!",
       ].join("\n\n"),
     );
   });
 
-  it("labels the snapshot and shows pending tasks", () => {
+  it("labels the snapshot, shows pending tasks and skips the cheer", () => {
     const [text] = formatReport(
-      { ...data, members: [{ name: "A", tasks: [{ title: "T", status: "PENDING" }], completed: 0, total: 1 }], completed: 0, total: 1 },
+      {
+        ...data,
+        members: [{ name: "A", tasks: [{ title: "T", status: "PENDING" }], completed: 0, total: 1 }],
+        completed: 0,
+        total: 1,
+      },
       "snapshot",
     );
-    expect(text).toContain("📊 <b>Today so far</b>");
-    expect(text).toContain("• T: ⏳ Pending\nProgress: 0/1 — 0%");
-    expect(text).toContain("0 completed tasks out of 1 total task.");
+    expect(text).toContain("📊 <b>وضعیت امروز تا این لحظه</b>");
+    expect(text).toContain("• T — ⏳ در انتظار");
+    expect(text).toContain("۰ کار از ۱ کار انجام شد.");
+    expect(text).not.toContain("فردا");
   });
 
   it("uses empty states instead of 0%", () => {
     const [text] = formatReport({ date: "2026-07-01", members: [], completed: 0, total: 0 }, "final");
-    expect(text).toContain("No members yet");
-    expect(text).toContain("<b>Group progress</b>\nNo tasks today.");
-    expect(text).not.toContain("%");
+    expect(text).toContain("هنوز کسی عضو نشده");
+    expect(text).toContain("🍃 امروز کاری ثبت نشده.");
+    expect(text).not.toContain("٪");
   });
 });
 

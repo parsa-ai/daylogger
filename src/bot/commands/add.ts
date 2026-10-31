@@ -22,7 +22,7 @@ export async function addCommand(ctx: CommandContext<Context>) {
 
   const title = parseTitle(ctx.match);
   if (!title.ok) {
-    await ctx.reply(title.error, { reply_parameters: { message_id: ctx.message.message_id } });
+    await ctx.reply(messages.titleError(title.reason), { reply_parameters: { message_id: ctx.message.message_id } });
     return;
   }
   await addOneTimeTask(ctx, user, title.title, ctx.message);
