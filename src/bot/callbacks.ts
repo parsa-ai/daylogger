@@ -1,9 +1,11 @@
 import { GrammyError, type Context, type InlineKeyboard } from "grammy";
 import {
   MAX_RECURRING_TASKS,
+  deleteRecurringTask,
   findRecurringTask,
   isOwner,
   listRecurringTasks,
+  setRecurringTaskActive,
   type TaskWithOwner,
 } from "@/core/recurring";
 import { findUser } from "@/core/users";
@@ -11,7 +13,7 @@ import type { User } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { parseCallbackData } from "./callbackData";
 import { promptForInput } from "./input";
-import { taskDetailKeyboard, taskListKeyboard } from "./keyboards";
+import { confirmDeleteKeyboard, taskDetailKeyboard, taskListKeyboard } from "./keyboards";
 import { messages } from "./messages";
 
 /** Edit the button's message in place; "not modified" (e.g. double tap) is fine. */
@@ -67,8 +69,34 @@ async function route(ctx: Context): Promise<string | void> {
   if (!task) return messages.taskGone;
   if (!isOwner(task, from.id)) return messages.notOwner(task.user.displayName);
 
+  const userId = task.user.id;
   switch (data.action) {
     case "open":
       return showTask(ctx, task);
+
+    case "title":
+      return promptForInput(ctx, task.user, { kind: "editTitle", taskId: task.id }, (who) =>
+        messages.askNewTitle(who, task.title),
+      );
+
+    case "time":
+      return promptForInput(ctx, task.user, { kind: "editTime", taskId: task.id }, (who) =>
+        messages.askNewTime(who, task),
+      );
+
+    case "toggle": {
+      const isActive = !task.isActive;
+      if (!(await setRecurringTaskActive(db(), task.id, userId, isActive))) return messages.taskGone;
+      await showTask(ctx, { ...task, isActive });
+      return isActive ? messages.toastActivated : messages.toastPaused;
+    }
+
+    case "del":
+      return edit(ctx, messages.confirmDelete(task), confirmDeleteKeyboard(task));
+
+    case "delok":
+      if (!(await deleteRecurringTask(db(), task.id, userId))) return messages.taskGone;
+      await showList(ctx, task.user);
+      return messages.toastDeleted;
   }
 }

@@ -61,5 +61,18 @@ export const messages = {
 
   taskAdded: (title: string, time: string) =>
     `Added <b>${escapeHtml(title)}</b> at ${time}.\nIt starts tomorrow.`,
+
+  askNewTitle: (who: string, current: string) =>
+    `${who}, reply with a new title for <b>${escapeHtml(current)}</b>.\n<i>Send "cancel" to stop.</i>`,
+  askNewTime: (who: string, task: RecurringTask) =>
+    `${who}, reply with a new time for <b>${escapeHtml(task.title)}</b> (now ${task.reminderTime}).\n` +
+    `Use HH:mm, e.g. <code>10:00</code>.\n<i>Send "cancel" to stop.</i>`,
+  titleUpdated: (title: string) => `Renamed to <b>${escapeHtml(title)}</b>.\n${appliesTomorrow}`,
+  timeUpdated: (title: string, time: string) =>
+    `<b>${escapeHtml(title)}</b> is now at ${time}.\n${appliesTomorrow}`,
+
+  toastActivated: "Activated — from tomorrow.",
+  toastPaused: "Paused — from tomorrow.",
+  toastDeleted: "Deleted.",
 };
 

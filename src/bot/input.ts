@@ -7,7 +7,12 @@ import {
   type PendingAction,
   type PendingInput,
 } from "@/core/pending";
-import { createRecurringTask } from "@/core/recurring";
+import {
+  createRecurringTask,
+  findRecurringTask,
+  renameRecurringTask,
+  rescheduleRecurringTask,
+} from "@/core/recurring";
 import { findUser } from "@/core/users";
 import { parseTime, parseTitle } from "@/core/validation";
 import type { User } from "@/generated/prisma/client";
@@ -90,6 +95,54 @@ export async function pendingInputHandler(ctx: Context, next: NextFunction) {
         return;
       }
       await reply(messages.taskAdded(action.title, time), {
+        reply_markup: backToListKeyboard(ctx.from.id),
+      });
+      return;
+    }
+
+    case "editTitle":
+    case "editTime": {
+      const task = await findRecurringTask(db(), action.taskId);
+      if (!task || task.userId !== user.id) {
+        await clearPendingAction(db(), user.id);
+        await reply(messages.taskGone);
+        return;
+      }
+
+      if (action.kind === "editTitle") {
+        const title = parseTitle(text);
+        if (!title.ok) {
+          return promptForInput(
+            ctx,
+            user,
+            action,
+            (who) => `${title.error}
+${messages.askNewTitle(who, task.title)}`,
+            message,
+          );
+        }
+        const updated = await renameRecurringTask(db(), task.id, user.id, title.title);
+        await clearPendingAction(db(), user.id);
+        await reply(updated ? messages.titleUpdated(title.title) : messages.taskGone, {
+          reply_markup: backToListKeyboard(ctx.from.id),
+        });
+        return;
+      }
+
+      const time = parseTime(text);
+      if (!time) {
+        return promptForInput(
+          ctx,
+          user,
+          action,
+          (who) => `${messages.invalidTime}
+${messages.askNewTime(who, task)}`,
+          message,
+        );
+      }
+      const updated = await rescheduleRecurringTask(db(), task.id, user.id, time);
+      await clearPendingAction(db(), user.id);
+      await reply(updated ? messages.timeUpdated(task.title, time) : messages.taskGone, {
         reply_markup: backToListKeyboard(ctx.from.id),
       });
       return;
