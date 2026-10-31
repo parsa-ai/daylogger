@@ -86,6 +86,9 @@ export const messages = {
     `⏳ ${who} hasn't done <b>${escapeHtml(title)}</b> yet.\n` +
     (nextAt ? `I'll check again at ${nextAt}.` : "No more reminders today."),
 
+  reminderIncomplete: (who: string, title: string) =>
+    `❌ ${who} didn't complete <b>${escapeHtml(title)}</b>.\nDone after all? Tap below (today only).`,
+
   notTaskOwner: (name: string) => `Only ${name} can answer this.`,
   toastCompleted: "Nice work! ✅",
   toastNotYet: "Okay, I'll check again later.",

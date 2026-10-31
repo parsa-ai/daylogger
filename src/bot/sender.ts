@@ -2,7 +2,7 @@ import { Api } from "grammy";
 import type { ReminderSender } from "@/core/delivery";
 import { env } from "@/lib/env";
 import { mention } from "./format";
-import { reminderKeyboard } from "./keyboards";
+import { completeOnlyKeyboard, reminderKeyboard } from "./keyboards";
 import { messages } from "./messages";
 
 /** Posts reminders to the configured group (used by the cron, outside any update). */
@@ -23,6 +23,13 @@ export function telegramReminderSender(): ReminderSender {
     },
     async clearButtons(messageId) {
       await api.editMessageReplyMarkup(chatId, messageId);
+    },
+    async markIncomplete(task, messageId) {
+      const who = mention(task.user.telegramUserId, task.user.displayName);
+      await api.editMessageText(chatId, messageId, messages.reminderIncomplete(who, task.title), {
+        parse_mode: "HTML",
+        reply_markup: completeOnlyKeyboard(task.id),
+      });
     },
   };
 }

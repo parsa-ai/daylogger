@@ -48,7 +48,11 @@ function fakeDb(task: DueTask) {
 }
 
 function fakeSender(messageId = 100): ReminderSender & { sendReminder: ReturnType<typeof vi.fn> } {
-  return { sendReminder: vi.fn(async () => messageId), clearButtons: vi.fn(async () => {}) };
+  return {
+    sendReminder: vi.fn(async () => messageId),
+    clearButtons: vi.fn(async () => {}),
+    markIncomplete: vi.fn(async () => {}),
+  };
 }
 
 const at = (iso: string) => new Date(iso);

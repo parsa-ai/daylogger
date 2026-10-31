@@ -13,6 +13,8 @@ export interface ReminderSender {
   sendReminder(task: DueTask, attempt: number): Promise<number>;
   /** Remove the buttons from an older reminder message (best effort). */
   clearButtons(messageId: number): Promise<void>;
+  /** Show a finalized task as not completed, keeping a Completed button for later today. */
+  markIncomplete(task: DueTask, messageId: number): Promise<void>;
 }
 
 export const BATCH_LIMIT = 50;
