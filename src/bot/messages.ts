@@ -1,4 +1,7 @@
+import type { RecurringTask } from "@/generated/prisma/client";
 import { escapeHtml } from "./format";
+
+const appliesTomorrow = "<i>Changes apply from tomorrow.</i>";
 
 export const messages = {
   welcome: (name: string) =>
@@ -22,4 +25,28 @@ export const messages = {
     `This group isn't configured yet.\nSet <code>GROUP_CHAT_ID=${chatId}</code> and redeploy.`,
 
   notRegistered: "Please send /start first so I know you.",
+
+  // /tasks
+  taskList: (name: string, tasks: RecurringTask[]) => {
+    const header = `<b>${escapeHtml(name)}'s recurring tasks</b>\n\n`;
+    if (tasks.length === 0) return header + "No recurring tasks yet. Tap ➕ Add task to create one.";
+    const lines = tasks.map(
+      (t) => `• ${t.reminderTime} — ${escapeHtml(t.title)}${t.isActive ? "" : " <i>(paused)</i>"}`,
+    );
+    return header + lines.join("\n") + `\n\nTap a task to manage it. ${appliesTomorrow}`;
+  },
+
+  taskDetail: (task: RecurringTask) =>
+    `<b>${escapeHtml(task.title)}</b>\n` +
+    `Time: ${task.reminderTime}\n` +
+    `Status: ${task.isActive ? "Active" : "Paused"}\n\n` +
+    appliesTomorrow,
+
+  confirmDelete: (task: RecurringTask) =>
+    `Delete <b>${escapeHtml(task.title)}</b> (${task.reminderTime})?\n` +
+    `Past days and reports are kept.`,
+
+  notOwner: (name: string) => `Only ${name} can manage these tasks.`,
+  taskGone: "This task no longer exists.",
 };
+

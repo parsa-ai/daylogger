@@ -1,7 +1,9 @@
 import { Bot } from "grammy";
 import { env } from "@/lib/env";
+import { recurringTaskCallback } from "./callbacks";
 import { helpCommand } from "./commands/help";
 import { startCommand } from "./commands/start";
+import { tasksCommand } from "./commands/tasks";
 import { messages } from "./messages";
 
 let bot: Bot | undefined;
@@ -24,6 +26,8 @@ function createBot(): Bot {
 
   group.command("start", startCommand);
   group.command("help", helpCommand);
+  group.command("tasks", tasksCommand);
+  group.callbackQuery(/^rt:/, recurringTaskCallback);
 
   return b;
 }
