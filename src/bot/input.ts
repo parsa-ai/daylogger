@@ -14,12 +14,23 @@ import {
   rescheduleRecurringTask,
 } from "@/core/recurring";
 import { findUser } from "@/core/users";
+import { isTimeAfter } from "@/core/time";
 import { parseTime, parseTitle } from "@/core/validation";
 import type { User } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { mention } from "./format";
 import { backToListKeyboard } from "./keyboards";
 import { messages } from "./messages";
+
+/** A reminder time for a recurring task, or the error to show. */
+function parseTaskTime(text: string): { ok: true; time: string } | { ok: false; error: string } {
+  const time = parseTime(text);
+  if (!time) return { ok: false, error: messages.invalidTime };
+  const cutoff = env().REMINDER_CUTOFF;
+  if (isTimeAfter(time, cutoff)) return { ok: false, error: messages.timeAfterCutoff(cutoff) };
+  return { ok: true, time };
+}
 
 /**
  * Ask the user for text and remember what the answer is for. The prompt uses a
@@ -78,16 +89,17 @@ export async function pendingInputHandler(ctx: Context, next: NextFunction) {
     }
 
     case "addRecurringTime": {
-      const time = parseTime(text);
-      if (!time) {
+      const parsed = parseTaskTime(text);
+      if (!parsed.ok) {
         return promptForInput(
           ctx,
           user,
           action,
-          (who) => `${messages.invalidTime}\n${messages.askTime(who, action.title)}`,
+          (who) => `${parsed.error}\n${messages.askTime(who, action.title)}`,
           message,
         );
       }
+      const { time } = parsed;
       const result = await createRecurringTask(db(), user.id, action.title, time);
       await clearPendingAction(db(), user.id);
       if (!result.ok) {
@@ -116,8 +128,7 @@ export async function pendingInputHandler(ctx: Context, next: NextFunction) {
             ctx,
             user,
             action,
-            (who) => `${title.error}
-${messages.askNewTitle(who, task.title)}`,
+            (who) => `${title.error}\n${messages.askNewTitle(who, task.title)}`,
             message,
           );
         }
@@ -129,17 +140,17 @@ ${messages.askNewTitle(who, task.title)}`,
         return;
       }
 
-      const time = parseTime(text);
-      if (!time) {
+      const parsed = parseTaskTime(text);
+      if (!parsed.ok) {
         return promptForInput(
           ctx,
           user,
           action,
-          (who) => `${messages.invalidTime}
-${messages.askNewTime(who, task)}`,
+          (who) => `${parsed.error}\n${messages.askNewTime(who, task)}`,
           message,
         );
       }
+      const { time } = parsed;
       const updated = await rescheduleRecurringTask(db(), task.id, user.id, time);
       await clearPendingAction(db(), user.id);
       await reply(updated ? messages.timeUpdated(task.title, time) : messages.taskGone, {

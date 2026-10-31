@@ -57,6 +57,7 @@ export const messages = {
     `${who}, what time should I ask about <b>${escapeHtml(title)}</b>?\n` +
     `Reply with a time like <code>10:00</code> or <code>21:15</code>.\n<i>Send "cancel" to stop.</i>`,
   invalidTime: "That isn't a valid time. Use HH:mm, e.g. 10:00.",
+  timeAfterCutoff: (cutoff: string) => `Reminders stop at ${cutoff}, so pick a time no later than that.`,
   inputCancelled: "Cancelled.",
 
   taskAdded: (title: string, time: string) =>
