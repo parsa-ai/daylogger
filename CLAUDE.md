@@ -55,6 +55,8 @@ Key invariants (see `docs/PLAN.md` for detail):
 - **Multi-step input** (adding/editing titles, "specific time" for `/add`) is stored in `User.pendingAction` (JSON, zod-validated in `src/core/pending.ts`), not in grammY sessions/memory. The bot sends a selective force-reply prompt and only accepts a text that *replies to that prompt's message id* (works with privacy mode on; ignores normal chatter). Status changes are inline-button only.
 - **Callback data** is `rt:<action>:<target>` (`src/bot/callbackData.ts`, 64-byte limit); `src/bot/callbacks.ts` routes it and answers each callback exactly once.
 
+- **UI language is Persian.** All user-facing text lives in `src/bot/messages.ts` (and report labels in `src/bot/report.ts`); show numbers/times with `fa()` (Persian digits) and dates with `persianDate()` from `src/bot/format.ts`. Texts used as callback toasts must be plain text (no HTML). Input accepts Persian/Arabic digits (`parseTime`) and «لغو» to cancel (`isCancel`). Buttons use Telegram styles: `.success()` for done/add, `.danger()` for delete, `.primary()` for navigation.
+
 Env vars: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET`, `DATABASE_URL`, `DIRECT_URL`, `GROUP_CHAT_ID`, `GROUP_TIMEZONE` (validated with zod in `src/lib/env.ts`; template in `.env.example`).
 
 ## Git rules
