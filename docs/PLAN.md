@@ -131,13 +131,26 @@ reminderCount  meaning                          nextReminderAt
 3              follow-up #2 sent                sent + 1h    (finalize → INCOMPLETE)
 ```
 
+- Follow-ups stay on the T+1h / T+2h grid, but never less than 45 min after
+  the previous send (so a cron outage doesn't cause back-to-back reminders).
 - Any candidate time > cutoff → no more reminders; `nextReminderAt = null`
-  (task finalized at report time).
+  (task finalized at report time). Recurring task times after the cutoff are
+  rejected at input, since such a task could never be answered.
+- A reminder is skipped (and `nextReminderAt` cleared) when it's no longer the
+  task's day, past the cutoff, the definition is paused/deleted, or the user is
+  inactive.
 - **Completed** button → `COMPLETED`, `completedAt = now`, `nextReminderAt = null`,
   edit the reminder message to show ✅ and remove buttons. Guarded update:
   `WHERE id = ? AND status IN (PENDING, INCOMPLETE)` → second click is a no-op.
-- **Not yet** → keep `PENDING`, remove buttons from that message, next reminder
-  stays as already scheduled (count increments only when a reminder is sent).
+- **Not yet** → keep `PENDING`, replace that message's buttons with just
+  **Completed** and show the next check time; next reminder stays as already
+  scheduled (count increments only when a reminder is sent).
+- Sending a new reminder clears the buttons on the previous one.
+- **Finalize** (count = 3, due) → `INCOMPLETE`; the last reminder is edited to
+  "didn't complete" with a **Completed** button (valid for the rest of the day).
+- **Cron tick order** (`src/core/tick.ts`): finalize past days → generate today →
+  finalize due → at ≥ report time finalize the whole day → send reminders.
+  Closing the day before sending guarantees nothing goes out after the report.
 - Non-owner click → `answerCallbackQuery("Only <name> can answer this")`, no DB write.
 - **Sending a reminder (idempotent):** claim the row first with a conditional
   update (`WHERE id = ? AND reminderCount = k AND status = PENDING`) that bumps

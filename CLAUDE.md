@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Phases 1–3 (setup, Telegram integration, recurring tasks) done; next is Phase 4 (reminders, step 16). See the numbered steps in the plan:
+Phases 1–4 (setup, Telegram integration, recurring tasks, reminders) done; next is Phase 5 (one-time tasks, step 22). See the numbered steps in the plan:
 
 - `docs/PRODEUCT.md` — product requirements (source of truth; filename typo is intentional/kept).
 - `docs/PLAN.md` — design decisions (D1–D13), Prisma schema, reminder state machine, and the numbered step list. Work through steps in order and update this file as real commands/structure appear.
@@ -41,9 +41,9 @@ Serverless only — **no `setTimeout`/`setInterval`, in-memory queues, or proces
 
 Two entry points:
 - `src/app/api/telegram/route.ts` — webhook. Checks `X-Telegram-Bot-Api-Secret-Token`, dedups by `update_id` via `ProcessedUpdate` insert-or-skip, ignores chats other than `GROUP_CHAT_ID`, then hands off to the grammY bot (`src/bot/`).
-- `src/app/api/cron/route.ts` — called every 5 min (`vercel.json`, requires Vercel Pro or an external pinger), guarded by `Authorization: Bearer $CRON_SECRET`. Each tick: ensure today's `DailyTask` instances exist → send due reminders → finalize → at ≥22:00 publish the report once.
+- `src/app/api/cron/route.ts` — called every 5 min (`vercel.json`, requires Vercel Pro or an external pinger), guarded by `Authorization: Bearer $CRON_SECRET`. `runTick` (`src/core/tick.ts`): finalize past days → generate today → finalize due → at ≥ `REPORT_TIME` close the day → send due reminders (`src/core/delivery.ts`, Telegram side injected via `ReminderSender` in `src/bot/sender.ts`). Report publishing is added in Phase 6.
 
-Business logic lives in `src/core/` and takes `now` + a db client so it is testable without Telegram; `src/bot/` is a thin Telegram layer.
+Business logic lives in `src/core/` and takes `now` + a db client (and an injected sender where it talks to Telegram) so it is testable without Telegram; `src/bot/` is a thin Telegram layer. Reminder buttons use `dt:<done|later>:<dailyTaskId>` (`src/bot/reminderCallbacks.ts`).
 
 Key invariants (see `docs/PLAN.md` for detail):
 - **Definitions vs. instances:** `RecurringTask` is copied into `DailyTask` (title, reminderTime) at generation. Editing/deleting a definition never touches existing `DailyTask` rows; changes apply from the next day. Recurring tasks are soft-deleted.
