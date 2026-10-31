@@ -39,3 +39,9 @@ export function env(): Env {
   }
   return cached;
 }
+
+/** Group scheduling settings for the core logic. */
+export function scheduleConfig() {
+  const e = env();
+  return { timeZone: e.GROUP_TIMEZONE, cutoff: e.REMINDER_CUTOFF, reportTime: e.REPORT_TIME };
+}
