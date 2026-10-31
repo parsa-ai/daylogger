@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { processDueReminders, type DueTask, type ReminderSender } from "./delivery";
+import { processDueReminders, type DueTask, type GroupSender } from "./delivery";
 import type { ScheduleConfig } from "./generation";
 
 const config: ScheduleConfig = { timeZone: "Europe/London", cutoff: "21:30" };
@@ -47,11 +47,12 @@ function fakeDb(task: DueTask) {
   };
 }
 
-function fakeSender(messageId = 100): ReminderSender & { sendReminder: ReturnType<typeof vi.fn> } {
+function fakeSender(messageId = 100): GroupSender & { sendReminder: ReturnType<typeof vi.fn> } {
   return {
     sendReminder: vi.fn(async () => messageId),
     clearButtons: vi.fn(async () => {}),
     markIncomplete: vi.fn(async () => {}),
+    sendReport: vi.fn(async () => 1),
   };
 }
 

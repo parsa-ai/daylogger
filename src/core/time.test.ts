@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromDbDate, isTimeAfter, localDate, localTime, startOfLocalDay, toDbDate, toUtc } from "./time";
+import { fromDbDate, isTimeAfter, localDate, previousDate, localTime, startOfLocalDay, toDbDate, toUtc } from "./time";
 
 const LONDON = "Europe/London";
 
@@ -52,6 +52,12 @@ describe("helpers", () => {
   it("toDbDate is UTC midnight of the local date", () => {
     expect(toDbDate("2026-07-01").toISOString()).toBe("2026-07-01T00:00:00.000Z");
     expect(fromDbDate(toDbDate("2026-07-01"))).toBe("2026-07-01");
+  });
+
+  it("previousDate crosses month and year boundaries", () => {
+    expect(previousDate("2026-07-01")).toBe("2026-06-30");
+    expect(previousDate("2026-01-01")).toBe("2025-12-31");
+    expect(previousDate("2028-03-01")).toBe("2028-02-29");
   });
 
   it("compares HH:mm", () => {

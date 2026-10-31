@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { BATCH_LIMIT, type DueTask, type ReminderSender } from "./delivery";
+import { BATCH_LIMIT, type DueTask, type GroupSender } from "./delivery";
 import { MAX_REMINDERS } from "./reminders";
 import { toDbDate } from "./time";
 
@@ -13,7 +13,7 @@ const INCOMPLETE = { status: "INCOMPLETE", nextReminderAt: null } as const;
  */
 export async function finalizeDue(
   db: Db,
-  sender: Pick<ReminderSender, "markIncomplete">,
+  sender: Pick<GroupSender, "markIncomplete">,
   now: Date,
   limit = BATCH_LIMIT,
 ): Promise<number> {

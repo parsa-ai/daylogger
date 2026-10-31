@@ -49,3 +49,10 @@ export function fromDbDate(date: Date): string {
 export function isTimeAfter(a: string, b: string): boolean {
   return a > b;
 }
+
+/** The local date before `date`. */
+export function previousDate(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}

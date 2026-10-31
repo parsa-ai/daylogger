@@ -71,3 +71,46 @@ export async function loadReport(db: Db, date: string): Promise<ReportData> {
   ]);
   return buildReportData(date, users, tasks);
 }
+
+/** Sends a finished report to the group; returns the first message id. */
+export interface ReportSender {
+  sendReport(data: ReportData): Promise<number>;
+}
+
+/**
+ * Publish the final report for `date` at most once. The DailyReport row is
+ * inserted *before* sending (primary key on date), so racing ticks can't both
+ * send. If sending fails the row is removed so the next tick retries.
+ * Returns whether this call published it.
+ */
+export async function publishReportOnce(
+  db: Pick<PrismaClient, "user" | "dailyTask" | "dailyReport">,
+  sender: ReportSender,
+  date: string,
+): Promise<boolean> {
+  const key = toDbDate(date);
+  const { count } = await db.dailyReport.createMany({ data: [{ date: key }], skipDuplicates: true });
+  if (count !== 1) return false;
+
+  let messageId: number;
+  try {
+    messageId = await sender.sendReport(await loadReport(db, date));
+  } catch (error) {
+    console.error("Failed to publish report", date, error);
+    await db.dailyReport.deleteMany({ where: { date: key, messageId: null } });
+    return false;
+  }
+  // Sent: keep the row even if recording the id fails, so it's never sent twice.
+  await db.dailyReport.update({ where: { date: key }, data: { messageId } }).catch((error: unknown) => {
+    console.error("Failed to record report message id", date, error);
+  });
+  return true;
+}
+
+/** A day that had tasks but never got its report (e.g. the evening ticks were missed). */
+export async function hasMissedReport(db: Pick<PrismaClient, "dailyTask" | "dailyReport">, date: string) {
+  const key = toDbDate(date);
+  const report = await db.dailyReport.findUnique({ where: { date: key }, select: { date: true } });
+  if (report) return false;
+  return (await db.dailyTask.count({ where: { date: key } })) > 0;
+}

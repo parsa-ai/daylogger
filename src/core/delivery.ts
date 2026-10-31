@@ -1,14 +1,15 @@
 import type { DailyTask, PrismaClient, RecurringTask, User } from "@/generated/prisma/client";
 import type { ScheduleConfig } from "./generation";
 import { canSendAt, MAX_REMINDERS, nextActionAt } from "./reminders";
+import type { ReportSender } from "./report";
 import { fromDbDate } from "./time";
 
 type Db = Pick<PrismaClient, "dailyTask">;
 
 export type DueTask = DailyTask & { user: User; recurringTask: RecurringTask | null };
 
-/** The Telegram side of reminders, injected so this module is testable. */
-export interface ReminderSender {
+/** The Telegram side of the scheduler (reminders and reports), injected so the core is testable. */
+export interface GroupSender extends ReportSender {
   /** Post reminder number `attempt` (1–3) to the group; returns its message id. */
   sendReminder(task: DueTask, attempt: number): Promise<number>;
   /** Remove the buttons from an older reminder message (best effort). */
@@ -42,7 +43,7 @@ function shouldSend(task: DueTask, now: Date, config: ScheduleConfig): task is D
  */
 export async function processDueReminders(
   db: Db,
-  sender: ReminderSender,
+  sender: GroupSender,
   now: Date,
   config: ScheduleConfig,
   limit = BATCH_LIMIT,

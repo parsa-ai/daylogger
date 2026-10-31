@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { buildReportData, percent } from "./report";
+import { describe, expect, it, vi } from "vitest";
+import { buildReportData, percent, publishReportOnce } from "./report";
 
 const created = new Date("2026-07-01T00:00:00Z");
 const task = (userId: string, title: string, status: string, reminderTime: string | null = null) => ({
@@ -20,6 +20,61 @@ describe("percent", () => {
 
   it("is null when there are no tasks", () => {
     expect(percent(0, 0)).toBeNull();
+  });
+});
+
+describe("publishReportOnce", () => {
+  function fakeDb() {
+    const reports = new Map<number, { messageId: number | null }>();
+    return {
+      reports,
+      user: { findMany: vi.fn(async () => []) },
+      dailyTask: { findMany: vi.fn(async () => []) },
+      dailyReport: {
+        createMany: vi.fn(async ({ data: [{ date }] }: { data: { date: Date }[] }) => {
+          if (reports.has(date.getTime())) return { count: 0 };
+          reports.set(date.getTime(), { messageId: null });
+          return { count: 1 };
+        }),
+        update: vi.fn(async ({ where, data }: { where: { date: Date }; data: { messageId: number } }) => {
+          reports.set(where.date.getTime(), data);
+        }),
+        deleteMany: vi.fn(async ({ where }: { where: { date: Date } }) => {
+          reports.delete(where.date.getTime());
+        }),
+      },
+    };
+  }
+
+  it("sends once even when ticks race", async () => {
+    const db = fakeDb();
+    const sender = { sendReport: vi.fn(async () => 42) };
+    const results = await Promise.all([
+      publishReportOnce(db as never, sender, "2026-07-01"),
+      publishReportOnce(db as never, sender, "2026-07-01"),
+    ]);
+    expect(results.sort()).toEqual([false, true]);
+    expect(sender.sendReport).toHaveBeenCalledTimes(1);
+    expect([...db.reports.values()]).toEqual([{ messageId: 42 }]);
+  });
+
+  it("frees the slot when sending fails so the next tick retries", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const db = fakeDb();
+    const sender = { sendReport: vi.fn().mockRejectedValueOnce(new Error("down")).mockResolvedValue(7) };
+    expect(await publishReportOnce(db as never, sender, "2026-07-01")).toBe(false);
+    expect(await publishReportOnce(db as never, sender, "2026-07-01")).toBe(true);
+    expect(sender.sendReport).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the slot if only recording the message id fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const db = fakeDb();
+    db.dailyReport.update.mockRejectedValueOnce(new Error("db blip"));
+    const sender = { sendReport: vi.fn(async () => 7) };
+    expect(await publishReportOnce(db as never, sender, "2026-07-01")).toBe(true);
+    expect(await publishReportOnce(db as never, sender, "2026-07-01")).toBe(false);
+    expect(sender.sendReport).toHaveBeenCalledTimes(1);
   });
 });
 

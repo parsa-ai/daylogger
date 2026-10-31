@@ -1,12 +1,13 @@
 import { Api } from "grammy";
-import type { ReminderSender } from "@/core/delivery";
+import type { GroupSender } from "@/core/delivery";
 import { env } from "@/lib/env";
 import { mention } from "./format";
 import { completeOnlyKeyboard, reminderKeyboard } from "./keyboards";
 import { messages } from "./messages";
+import { formatReport } from "./report";
 
-/** Posts reminders to the configured group (used by the cron, outside any update). */
-export function telegramReminderSender(): ReminderSender {
+/** Posts reminders and reports to the configured group (used by the cron, outside any update). */
+export function telegramGroupSender(): GroupSender {
   const api = new Api(env().TELEGRAM_BOT_TOKEN);
   const groupId = env().GROUP_CHAT_ID;
   if (groupId === undefined) throw new Error("GROUP_CHAT_ID is not configured");
@@ -23,6 +24,14 @@ export function telegramReminderSender(): ReminderSender {
     },
     async clearButtons(messageId) {
       await api.editMessageReplyMarkup(chatId, messageId);
+    },
+    async sendReport(data) {
+      let firstId: number | undefined;
+      for (const text of formatReport(data, "final")) {
+        const sent = await api.sendMessage(chatId, text, { parse_mode: "HTML" });
+        firstId ??= sent.message_id;
+      }
+      return firstId!;
     },
     async markIncomplete(task, messageId) {
       const who = mention(task.user.telegramUserId, task.user.displayName);
