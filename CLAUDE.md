@@ -13,7 +13,7 @@ Do not expand scope beyond `PRODEUCT.md` §21 (MVP) — §22 lists explicitly ex
 
 ## Stack
 
-Next.js (App Router) + TypeScript, grammY, Prisma on Neon Postgres (`@prisma/adapter-neon`), Vercel + Vercel Cron, pnpm, vitest.
+Next.js (App Router) + TypeScript, grammY, Prisma on Neon Postgres (`@prisma/adapter-neon`), Vercel Hobby (free) + cron-job.org pinger, pnpm, vitest. Everything must stay on free tiers.
 
 ## Commands
 
@@ -25,6 +25,7 @@ pnpm vitest run src/lib/env.test.ts        # single test file
 pnpm vitest run -t "test name"             # single test by name
 pnpm db:migrate                # prisma migrate dev (uses DIRECT_URL)
 pnpm db:deploy                 # prisma migrate deploy
+pnpm cron:tick [base-url]      # run one scheduler tick (default localhost:3000)
 ```
 
 If `tsc` reports errors that contradict `tsconfig.json`, delete `tsconfig.tsbuildinfo` (stale incremental cache).
@@ -41,7 +42,7 @@ Serverless only — **no `setTimeout`/`setInterval`, in-memory queues, or proces
 
 Two entry points:
 - `src/app/api/telegram/route.ts` — webhook. Checks `X-Telegram-Bot-Api-Secret-Token`, dedups by `update_id` via `ProcessedUpdate` insert-or-skip, ignores chats other than `GROUP_CHAT_ID`, then hands off to the grammY bot (`src/bot/`).
-- `src/app/api/cron/route.ts` — called every 5 min (`vercel.json`, requires Vercel Pro or an external pinger), guarded by `Authorization: Bearer $CRON_SECRET`. `runTick` (`src/core/tick.ts`): finalize past days → generate today → finalize due → at ≥ `REPORT_TIME` close the day → send due reminders (`src/core/delivery.ts`, Telegram side injected via `ReminderSender` in `src/bot/sender.ts`). Report publishing is added in Phase 6.
+- `src/app/api/cron/route.ts` — called by a free external pinger (cron-job.org, every ~10 min; **no Vercel cron** — Hobby only allows daily, see `docs/SCHEDULER.md`), guarded by `Authorization: Bearer $CRON_SECRET`. `runTick` (`src/core/tick.ts`): finalize past days → generate today → finalize due → at ≥ `REPORT_TIME` close the day → send due reminders (`src/core/delivery.ts`, Telegram side injected via `ReminderSender` in `src/bot/sender.ts`). Report publishing is added in Phase 6.
 
 Business logic lives in `src/core/` and takes `now` + a db client (and an injected sender where it talks to Telegram) so it is testable without Telegram; `src/bot/` is a thin Telegram layer. Reminder buttons use `dt:<done|later>:<dailyTaskId>` (`src/bot/reminderCallbacks.ts`).
 

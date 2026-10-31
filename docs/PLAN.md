@@ -13,7 +13,7 @@ only with explicit approval.
 
 | # | Topic | Decision |
 |---|-------|----------|
-| D1 | **Cron frequency** | Vercel Hobby allows only daily crons. Reminders need a run **every 5 minutes** → requires **Vercel Pro**. Fallback if staying on Hobby: an external pinger (e.g. cron-job.org) hitting the same protected endpoint. The endpoint is identical either way. |
+| D1 | **Cron frequency** | Free hosting: Vercel Hobby allows only daily crons, so there is **no Vercel cron**. A free external pinger (cron-job.org) calls the Bearer-protected `/api/cron`, every 10 min from 06:00–23:00 group time, so Neon's free compute allowance isn't burned by keeping the DB awake 24/7. See `docs/SCHEDULER.md`. |
 | D2 | **Dedup storage** | Spec asks for three primary tables. Idempotency needs two tiny support tables: `ProcessedUpdate` (Telegram `update_id`) and `DailyReport` (`date` unique). Still "three primary" tables. |
 | D3 | **Reminder scheduling** | Store `nextReminderAt` (UTC `DateTime?`) on `DailyTask`. Cron selects `status = PENDING AND nextReminderAt <= now()`. No in-memory state. |
 | D4 | **Reminder message tracking** | Store `reminderMessageId` on `DailyTask` so the latest reminder can be edited (buttons removed / status shown) after a response. |
@@ -113,7 +113,6 @@ src/
     db.ts                     # Prisma singleton (Neon adapter)
     env.ts                    # zod-validated env
 prisma/schema.prisma
-vercel.json                   # cron config
 ```
 
 Core logic in `src/core` is pure-ish (takes `now` and a db client) so it can be
@@ -183,7 +182,7 @@ reminderCount  meaning                          nextReminderAt
 15. `core/time.ts` + `core/generation.ts` (`ensureTodayInstances`) with tests incl. DST days.
 
 ### Phase 4 — Reminder system
-16. `/api/cron` route with `Authorization: Bearer ${CRON_SECRET}`; `vercel.json` cron `*/5 * * * *`.
+16. `/api/cron` route with `Authorization: Bearer ${CRON_SECRET}`, called by an external pinger (D1).
 17. `core/reminders.ts` schedule math (pure) + tests (cutoff, late tasks, DST).
 18. `processDueReminders`: claim → send → persist (batch limit).
 19. Callback handlers: Completed / Not yet with owner validation and guarded updates.
@@ -202,7 +201,7 @@ reminderCount  meaning                          nextReminderAt
 
 ### Phase 7 — Deployment
 28. Vercel project + Neon prod DB, env vars, `prisma migrate deploy` in build.
-29. Set webhook to prod URL; verify cron runs (Vercel Pro, see D1).
+29. Set webhook to prod URL; set up the cron-job.org pinger and verify ticks (see D1, `docs/SCHEDULER.md`).
 30. Manual test checklist: duplicate update, double click, non-owner click, cron run twice, skip a cron run, task at 21:15, DST date.
 
 ---

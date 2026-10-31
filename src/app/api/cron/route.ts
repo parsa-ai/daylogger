@@ -7,7 +7,7 @@ import { env, scheduleConfig } from "@/lib/env";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Called every 5 minutes by Vercel Cron (or an external pinger, see PLAN.md D1).
+// Called by a free external pinger (cron-job.org) every 5–10 minutes; see docs/SCHEDULER.md.
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization") ?? "";
   if (!safeEqual(auth, `Bearer ${env().CRON_SECRET}`)) {

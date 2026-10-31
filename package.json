@@ -14,7 +14,8 @@
     "db:studio": "prisma studio",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bot:set-webhook": "node scripts/set-webhook.mts"
+    "bot:set-webhook": "node scripts/set-webhook.mts",
+    "cron:tick": "node scripts/tick.mts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
