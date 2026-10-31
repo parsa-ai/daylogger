@@ -1,4 +1,4 @@
-import { GrammyError, type Context, type InlineKeyboard } from "grammy";
+import type { Context } from "grammy";
 import {
   MAX_RECURRING_TASKS,
   deleteRecurringTask,
@@ -12,19 +12,12 @@ import { findUser } from "@/core/users";
 import type { User } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { parseCallbackData } from "./callbackData";
+import { editCallbackMessage } from "./edit";
 import { promptForInput } from "./input";
 import { confirmDeleteKeyboard, taskDetailKeyboard, taskListKeyboard } from "./keyboards";
 import { messages } from "./messages";
 
-/** Edit the button's message in place; "not modified" (e.g. double tap) is fine. */
-async function edit(ctx: Context, text: string, keyboard?: InlineKeyboard) {
-  try {
-    await ctx.editMessageText(text, { parse_mode: "HTML", reply_markup: keyboard });
-  } catch (error) {
-    if (error instanceof GrammyError && error.description.includes("message is not modified")) return;
-    throw error;
-  }
-}
+const edit = editCallbackMessage;
 
 async function showList(ctx: Context, owner: User) {
   const tasks = await listRecurringTasks(db(), owner.id);

@@ -80,6 +80,18 @@ export const messages = {
     return `🔔 ${label}: ${who}, have you done ${task} yet?`;
   },
 
+  reminderCompleted: (who: string, title: string, at: string) =>
+    `✅ ${who} completed <b>${escapeHtml(title)}</b> at ${at}.`,
+  reminderNotYet: (who: string, title: string, nextAt: string | null) =>
+    `⏳ ${who} hasn't done <b>${escapeHtml(title)}</b> yet.\n` +
+    (nextAt ? `I'll check again at ${nextAt}.` : "No more reminders today."),
+
+  notTaskOwner: (name: string) => `Only ${name} can answer this.`,
+  toastCompleted: "Nice work! ✅",
+  toastNotYet: "Okay, I'll check again later.",
+  toastAlreadyCompleted: "Already completed ✅",
+  toastTaskClosed: "This task is closed.",
+
   toastActivated: "Activated — from tomorrow.",
   toastPaused: "Paused — from tomorrow.",
   toastDeleted: "Deleted.",
