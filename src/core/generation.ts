@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient, RecurringTask } from "@/generated/prisma/client";
-import { isTimeAfter, localDate, startOfLocalDay, toDbDate, toUtc } from "./time";
+import { firstReminderAt } from "./reminders";
+import { localDate, startOfLocalDay, toDbDate } from "./time";
 
 type Db = Pick<PrismaClient, "recurringTask" | "dailyTask">;
 
@@ -26,9 +27,7 @@ export function buildDailyInstances(
     title: d.title,
     date: toDbDate(date),
     reminderTime: d.reminderTime,
-    nextReminderAt: isTimeAfter(d.reminderTime, config.cutoff)
-      ? null
-      : toUtc(date, d.reminderTime, config.timeZone),
+    nextReminderAt: firstReminderAt(date, d.reminderTime, config),
   }));
 }
 
