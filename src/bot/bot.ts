@@ -14,6 +14,11 @@ function createBot(): Bot {
   // Private chats only get a pointer to the group.
   b.chatType("private").command(["start", "help"], (ctx) => ctx.reply(messages.privateChat));
 
+  // Setup aid: in any other group, /start reveals the chat id to put in GROUP_CHAT_ID.
+  b.chatType(["group", "supergroup"])
+    .filter((ctx) => BigInt(ctx.chat.id) !== groupId)
+    .command("start", (ctx) => ctx.reply(messages.unknownGroup(ctx.chat.id), { parse_mode: "HTML" }));
+
   // Everything else must come from the configured group; other chats are ignored.
   const group = b.filter((ctx) => ctx.chat !== undefined && BigInt(ctx.chat.id) === groupId);
 

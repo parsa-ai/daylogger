@@ -18,5 +18,8 @@ export const messages = {
 
   privateChat: "I work inside the accountability group. Please use me there 🙂",
 
+  unknownGroup: (chatId: number) =>
+    `This group isn't configured yet.\nSet <code>GROUP_CHAT_ID=${chatId}</code> and redeploy.`,
+
   notRegistered: "Please send /start first so I know you.",
 };
