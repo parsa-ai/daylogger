@@ -15,6 +15,7 @@ import { parseCallbackData } from "./callbackData";
 import { editCallbackMessage } from "./edit";
 import { completeOnlyKeyboard, oneTimeChoiceKeyboard } from "./keyboards";
 import { messages } from "./messages";
+import { promptForInput } from "./prompt";
 
 /** Create today's one-time task and ask when to remind (shared by `/add <title>` and the title prompt). */
 export async function addOneTimeTask(ctx: Context, user: User, title: string, replyTo?: Message) {
@@ -43,6 +44,39 @@ export function scheduledText(task: Pick<DailyTask, "title">, reminderTime: stri
   return reminderTime ? messages.oneTimeScheduled(task.title, reminderTime) : messages.oneTimeNoReminder(task.title);
 }
 
+/** Still waiting for a reminder choice (nothing scheduled or sent yet). */
+export function isUnscheduled(task: DailyTask): boolean {
+  return (
+    task.recurringTaskId === null &&
+    task.status === "PENDING" &&
+    task.reminderCount === 0 &&
+    task.reminderTime === null &&
+    task.nextReminderAt === null
+  );
+}
+
+/**
+ * Handle the reply to "at what time?": validate, store, and confirm. Returns
+ * an error message to re-prompt with, or null when done.
+ */
+export async function setSpecificTime(
+  ctx: Context,
+  task: DailyTask,
+  time: string,
+  replyTo: Message,
+): Promise<string | null> {
+  const resolved = resolveReminder({ kind: "at", time }, new Date(), scheduleConfig());
+  if (!resolved.ok) return reminderError(resolved);
+
+  const updated = await setOneTimeReminder(db(), task, resolved);
+  await ctx.reply(updated ? scheduledText(task, resolved.reminderTime) : messages.toastReminderAlreadySet, {
+    parse_mode: "HTML",
+    reply_parameters: { message_id: replyTo.message_id },
+    ...(updated && { reply_markup: completeOnlyKeyboard(task.id) }),
+  });
+  return null;
+}
+
 const choices: Record<string, ReminderChoice> = {
   in30: { kind: "in", minutes: 30 },
   in60: { kind: "in", minutes: 60 },
@@ -64,8 +98,14 @@ async function route(ctx: Context): Promise<string | void> {
   if (!task) return messages.toastTaskClosed;
   if (task.user.telegramUserId !== BigInt(from.id)) return messages.notTaskOwner(task.user.displayName);
 
+  if (data.action === "at") {
+    if (!isUnscheduled(task)) return messages.toastReminderAlreadySet;
+    return promptForInput(ctx, task.user, { kind: "oneTimeReminderTime", taskId: task.id }, (who) =>
+      messages.askOneTimeTime(who, task.title, env().REMINDER_CUTOFF),
+    );
+  }
+
   const choice = choices[data.action];
-  if (!choice) return; // "at" is added with the specific-time flow
 
   const resolved = resolveReminder(choice, new Date(), scheduleConfig());
   if (!resolved.ok) return reminderError(resolved);

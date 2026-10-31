@@ -6,6 +6,7 @@ import {
   renameRecurringTask,
   rescheduleRecurringTask,
 } from "@/core/recurring";
+import { findDailyTask } from "@/core/tasks";
 import { findUser } from "@/core/users";
 import { isTimeAfter } from "@/core/time";
 import { parseTime, parseTitle } from "@/core/validation";
@@ -13,7 +14,7 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { backToListKeyboard } from "./keyboards";
 import { messages } from "./messages";
-import { addOneTimeTask } from "./oneTime";
+import { addOneTimeTask, setSpecificTime } from "./oneTime";
 import { promptForInput } from "./prompt";
 
 /** A reminder time for a recurring task, or the error to show. */
@@ -54,6 +55,30 @@ export async function pendingInputHandler(ctx: Context, next: NextFunction) {
       }
       await clearPendingAction(db(), user.id);
       return addOneTimeTask(ctx, user, title.title, message);
+    }
+
+    case "oneTimeReminderTime": {
+      const task = await findDailyTask(db(), action.taskId);
+      if (!task || task.userId !== user.id) {
+        await clearPendingAction(db(), user.id);
+        await reply(messages.toastTaskClosed);
+        return;
+      }
+      const reprompt = (error: string) =>
+        promptForInput(
+          ctx,
+          user,
+          action,
+          (who) => `${error}\n${messages.askOneTimeTime(who, task.title, env().REMINDER_CUTOFF)}`,
+          message,
+        );
+
+      const time = parseTime(text);
+      if (!time) return reprompt(messages.invalidTime);
+      const error = await setSpecificTime(ctx, task, time, message);
+      if (error) return reprompt(error);
+      await clearPendingAction(db(), user.id);
+      return;
     }
 
     case "addRecurringTitle": {

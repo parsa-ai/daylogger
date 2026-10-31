@@ -103,6 +103,9 @@ export const messages = {
   oneTimeScheduled: (title: string, time: string) =>
     `📝 <b>${escapeHtml(title)}</b> — I'll ask you at ${time}.\nDone sooner? Tap below.`,
   oneTimeNoReminder: (title: string) => `📝 <b>${escapeHtml(title)}</b> — no reminder.\nTap below when it's done.`,
+  askOneTimeTime: (who: string, title: string, cutoff: string) =>
+    `${who}, at what time today should I ask about <b>${escapeHtml(title)}</b>?\n` +
+    `Reply with a time like <code>16:30</code> (no later than ${cutoff}).\n<i>Send "cancel" to stop.</i>`,
   oneTimeAfterReport: "Today's report is already out — add it tomorrow.",
   oneTimeLimit: `You can add at most ${MAX_ONE_TIME_PER_DAY} one-time tasks per day.`,
   timeInPast: "That time has already passed.",
